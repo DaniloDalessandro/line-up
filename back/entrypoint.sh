@@ -4,15 +4,13 @@ echo "==> Waiting for database..."
 sleep 5
 
 echo "==> Running migrations..."
-python manage.py migrate --noinput 2>&1
-MIGRATE_EXIT=$?
-echo "==> Migration exit code: $MIGRATE_EXIT"
+python manage.py migrate --noinput
 
-if [ $MIGRATE_EXIT -ne 0 ]; then
-    echo "ERROR: migrations failed! Sleeping to allow log inspection..."
-    sleep 3600
-    exit 1
-fi
-
-echo "==> Starting server..."
-exec python manage.py runserver 0.0.0.0:8000
+echo "==> Starting gunicorn with gthread worker..."
+export OPENBLAS_NUM_THREADS=1
+exec gunicorn core.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --workers 1 \
+    --worker-class gthread \
+    --threads 4 \
+    --timeout 120
